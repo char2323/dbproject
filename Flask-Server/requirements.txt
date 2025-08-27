@@ -1,0 +1,29 @@
+# Flask and extensions
+Flask>=2.0
+Flask-SQLAlchemy>=3.0
+Flask-Login>=0.6
+Flask-Admin>=1.6
+Flask-WTF>=1.0
+werkzeug>=2.0
+python-dotenv>=1.0.0
+
+# API (Replaces deprecated flask-restplus)
+flask-restx
+
+# Database
+SQLAlchemy>=1.4
+PyMySQL # 使用 PyMySQL 替代 mysqlclient
+alembic
+Flask-Migrate
+
+# WSGI Server and Concurrency
+gunicorn>=20.0
+gevent
+
+# Utilities
+redis>=4.0
+Pillow>=9.0
+requests
+
+Flask-CORS
+wtforms-sqlalchemy
