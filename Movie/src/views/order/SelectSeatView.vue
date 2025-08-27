@@ -3,10 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import apiClient from '@/services/api.ts'
 
-// 定义场次数据类型
-interface MovieInfo {
-  name: string;
-}
+interface MovieInfo { name: string; }
 interface ScreenInfo {
   id: number;
   cinema_name: string;
@@ -20,23 +17,18 @@ const route = useRoute()
 const screenInfo = ref<ScreenInfo | null>(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
-
-// 模拟座位图，在真实项目中这个也应该从后端获取
-// 0: 可选, 1: 已售, 2: 选中
-const seatLayout = ref([
-  [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 1, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [1, 1, 0, 0, 0, 0, 0, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0],
-])
+const seatLayout = ref<number[][]>([])
 const selectedSeats = ref<string[]>([])
 
 onMounted(async () => {
   const screenId = route.params.id
   try {
-    const response = await apiClient.get(`/screens/${screenId}`)
-    screenInfo.value = response.data
+    const [screenResponse, seatsResponse] = await Promise.all([
+        apiClient.get(`/screens/${screenId}`),
+        apiClient.get(`/screens/${screenId}/seats`)
+    ]);
+    screenInfo.value = screenResponse.data
+    seatLayout.value = seatsResponse.data.seat_layout
   } catch (error) {
     errorMessage.value = '无法加载场次信息，请返回重试。'
   } finally {
@@ -44,37 +36,31 @@ onMounted(async () => {
   }
 })
 
-// 处理座位点击事件
 const handleSeatClick = (rowIndex: number, colIndex: number) => {
-  if (seatLayout.value[rowIndex][colIndex] === 1) return // 已售座位不可点击
-
+  if (seatLayout.value[rowIndex][colIndex] === 1) return
   const seatId = `${rowIndex + 1}排${colIndex + 1}座`
   const seatStatus = seatLayout.value[rowIndex][colIndex]
   const seatIndex = selectedSeats.value.indexOf(seatId)
-
   if (seatStatus === 0) {
-    // 最多只能选4个座位
     if (selectedSeats.value.length >= 4) {
       alert('最多只能选择4个座位')
       return
     }
-    seatLayout.value[rowIndex][colIndex] = 2 // 标记为选中
+    seatLayout.value[rowIndex][colIndex] = 2
     selectedSeats.value.push(seatId)
   } else if (seatStatus === 2) {
-    seatLayout.value[rowIndex][colIndex] = 0 // 取消选中
+    seatLayout.value[rowIndex][colIndex] = 0
     if (seatIndex > -1) {
       selectedSeats.value.splice(seatIndex, 1)
     }
   }
 }
 
-// 计算总价
 const totalPrice = computed(() => {
   if (!screenInfo.value) return 0
   return selectedSeats.value.length * screenInfo.value.price
 })
 
-// 格式化时间
 const formatTime = (datetime: string) => new Date(datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 </script>
 

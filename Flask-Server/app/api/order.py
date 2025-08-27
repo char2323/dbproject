@@ -1,12 +1,12 @@
 import uuid
 from flask_restx import Namespace, Resource, fields
 from flask_login import login_required, current_user
+from sqlalchemy.orm.attributes import flag_modified
 from ..models import Order, Screen, User
 from .. import db
 
 ns = Namespace('Order', description='订单相关操作')
 
-# 定义用于订单详情展示的嵌套模型
 screen_nested_model = ns.model('ScreenNested', {
     'start_time': fields.DateTime(),
     'cinema_name': fields.String(),
@@ -27,7 +27,6 @@ order_detail_model = ns.model('OrderDetailModel', {
     'movie': fields.Nested(movie_nested_model, attribute='screen.movie')
 })
 
-# 定义用于创建订单的输入数据模型
 order_create_model = ns.model('OrderCreateModel', {
     'screen_id': fields.Integer(required=True, description='场次ID'),
     'seats': fields.String(required=True, description='例如: "5排3座,5排4座"'),
@@ -48,19 +47,42 @@ class OrderList(Resource):
     @ns.expect(order_create_model, validate=True)
     @ns.marshal_with(order_detail_model, code=201)
     def post(self):
-        """为当前用户创建新订单"""
+        """为当前用户创建新订单，并更新座位图"""
         data = ns.payload
-        screen = db.session.get(Screen, data['screen_id'])
+        screen_id = data['screen_id']
+        seats_str = data['seats']
+        
+        screen = db.session.get(Screen, screen_id)
         if not screen:
             ns.abort(404, '场次不存在')
-        
+
+        seat_layout = screen.seat_layout
+        if not seat_layout:
+            ns.abort(500, '该场次未配置座位图')
+
+        selected_seats_list = seats_str.split(',')
+        for seat in selected_seats_list:
+            try:
+                row_str, col_str = seat.replace('排', ' ').replace('座', '').split()
+                row_index = int(row_str) - 1
+                col_index = int(col_str) - 1
+
+                if seat_layout[row_index][col_index] == 1:
+                    ns.abort(409, f"座位 {seat} 已被预定，请重新选择")
+                
+                seat_layout[row_index][col_index] = 1
+            except (ValueError, IndexError):
+                ns.abort(400, f"座位格式错误: {seat}")
+
+        flag_modified(screen, "seat_layout")
+
         new_order = Order(
             order_number=str(uuid.uuid4()),
             user_id=current_user.id,
             screen_id=screen.id,
             seats=data['seats'],
             total_price=data['total_price'],
-            status=1 # 简化流程，直接标记为已支付/待观影
+            status=1
         )
         db.session.add(new_order)
         db.session.commit()

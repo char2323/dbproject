@@ -1,7 +1,8 @@
 from . import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin # 引入 UserMixin 以便与 Flask-Login 集成
+from flask_login import UserMixin
+from sqlalchemy.types import JSON # 导入 JSON 类型
 
 # 用户表
 class User(UserMixin, db.Model):
@@ -13,17 +14,11 @@ class User(UserMixin, db.Model):
     avatar = db.Column(db.String(256), default='default_avatar.png')
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 密码处理
     @property
-    def password(self):
-        raise AttributeError('password is not a readable attribute')
-
+    def password(self): raise AttributeError('password is not a readable attribute')
     @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def password(self, password): self.password_hash = generate_password_hash(password)
+    def verify_password(self, password): return check_password_hash(self.password_hash, password)
 
 # 电影表
 class Movie(db.Model):
@@ -33,18 +28,19 @@ class Movie(db.Model):
     cover = db.Column(db.String(256))
     description = db.Column(db.Text)
     release_date = db.Column(db.Date)
-    duration_mins = db.Column(db.Integer) # 电影时长（分钟）
+    duration_mins = db.Column(db.Integer)
 
 # 场次表
 class Screen(db.Model):
     __tablename__ = 'screens'
     id = db.Column(db.Integer, primary_key=True)
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
-    cinema_name = db.Column(db.String(128)) # 影院名称
-    hall_name = db.Column(db.String(64)) # 影厅名称
+    cinema_name = db.Column(db.String(128))
+    hall_name = db.Column(db.String(64))
     start_time = db.Column(db.DateTime, nullable=False)
     price = db.Column(db.Float, nullable=False)
-    
+    seat_layout = db.Column(JSON) # 新增座位图字段
+
     movie = db.relationship('Movie', backref=db.backref('screens', lazy='dynamic'))
 
 # 订单表
@@ -54,9 +50,9 @@ class Order(db.Model):
     order_number = db.Column(db.String(64), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     screen_id = db.Column(db.Integer, db.ForeignKey('screens.id'), nullable=False)
-    seats = db.Column(db.String(256), nullable=False) # 例如 "5排3座,5排4座"
+    seats = db.Column(db.String(256), nullable=False)
     total_price = db.Column(db.Float, nullable=False)
-    status = db.Column(db.Integer, default=0, index=True) # 0:待支付, 1:已支付/待观影, 2:已完成, 3:已取消
+    status = db.Column(db.Integer, default=0, index=True)
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', backref=db.backref('orders', lazy='dynamic'))
@@ -69,7 +65,7 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
     content = db.Column(db.Text)
-    rating = db.Column(db.Float) # 评分
+    rating = db.Column(db.Float)
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', backref=db.backref('comments', lazy='dynamic'))
@@ -81,7 +77,6 @@ class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
-    # 1:想看, 2:已看
     status = db.Column(db.Integer, nullable=False)
     
     user = db.relationship('User', backref=db.backref('favorites', lazy='dynamic'))
@@ -93,9 +88,9 @@ class Coupon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(128))
-    discount = db.Column(db.Float) # 抵扣金额
-    min_spend = db.Column(db.Float) # 最小消费金额
-    expiry_date = db.Column(db.Date) # 过期日期
+    discount = db.Column(db.Float)
+    min_spend = db.Column(db.Float)
+    expiry_date = db.Column(db.Date)
     is_used = db.Column(db.Boolean, default=False)
     
     user = db.relationship('User', backref=db.backref('coupons', lazy='dynamic'))
