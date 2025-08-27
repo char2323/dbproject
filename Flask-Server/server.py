@@ -1,9 +1,10 @@
 import os
 import click
 import json
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from app import create_app, db
-from app.models import Movie
+from app.models import Movie, Screen
 from flask_migrate import Migrate
 
 app = create_app()
@@ -67,3 +68,56 @@ def seed():
     
     db.session.commit()
     click.echo("数据库填充完成。")
+
+@app.cli.command("seed-screens")
+def seed_screens():
+    """
+    为数据库中的电影批量创建模拟场次。
+    """
+    click.echo("Starting to seed screens...")
+
+    # 获取数据库中所有的电影
+    movies = Movie.query.all()
+    if not movies:
+        click.echo("No movies found in the database. Please run 'flask seed' first.")
+        return
+
+    # 模拟的影院和影厅信息
+    cinemas = [("万达影城", ["IMAX厅", "4号厅", "情侣厅"]), ("中影国际影城", ["1号厅", "激光厅"])]
+
+    # 默认的座位图
+    default_seat_layout = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+        [0, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ]
+
+    for movie in movies:
+        # 为每部电影创建 3 个场次
+        for i in range(3):
+            cinema_name, hall_list = random.choice(cinemas)
+            hall_name = random.choice(hall_list)
+
+            # 生成一个未来随机时间点的场次 (未来1-3天内, 10:00 - 22:00 之间)
+            start_day = datetime.now() + timedelta(days=random.randint(1, 3))
+            start_hour = random.randint(10, 22)
+            start_minute = random.choice([0, 15, 30, 45])
+            start_time = start_day.replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
+
+            # 随机生成一个票价
+            price = random.choice([39.9, 45.0, 49.9, 55.0, 60.0])
+
+            new_screen = Screen(
+                movie_id=movie.id,
+                cinema_name=cinema_name,
+                hall_name=hall_name,
+                start_time=start_time,
+                price=price,
+                seat_layout=default_seat_layout
+            )
+            db.session.add(new_screen)
+
+    db.session.commit()
+    click.echo(f"Successfully added screenings for {len(movies)} movies.")
+
