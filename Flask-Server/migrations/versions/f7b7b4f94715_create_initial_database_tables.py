@@ -1,8 +1,8 @@
 """Create initial database tables.
 
-Revision ID: a90d73f0934a
+Revision ID: f7b7b4f94715
 Revises: 
-Create Date: 2025-08-26 23:03:44.541464
+Create Date: 2025-08-27 15:51:34.304591
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a90d73f0934a'
+revision = 'f7b7b4f94715'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -78,6 +78,7 @@ def upgrade():
     sa.Column('hall_name', sa.String(length=64), nullable=True),
     sa.Column('start_time', sa.DateTime(), nullable=False),
     sa.Column('price', sa.Float(), nullable=False),
+    sa.Column('seat_layout', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['movie_id'], ['movies.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

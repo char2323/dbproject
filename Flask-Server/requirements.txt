@@ -6,24 +6,25 @@ Flask-Admin>=1.6
 Flask-WTF>=1.0
 werkzeug>=2.0
 python-dotenv>=1.0.0
+Flask-CORS>=4.0.0
+wtforms-sqlalchemy
+cryptography
 
-# API (Replaces deprecated flask-restplus)
+# API Framework
 flask-restx
 
 # Database
 SQLAlchemy>=1.4
-PyMySQL # 使用 PyMySQL 替代 mysqlclient
+mysqlclient # Docker环境中用这个
+PyMySQL     # 本地Conda环境用这个
 alembic
 Flask-Migrate
 
 # WSGI Server and Concurrency
-gunicorn>=20.0
+gunicorn>=2.0
 gevent
 
 # Utilities
 redis>=4.0
 Pillow>=9.0
 requests
-
-Flask-CORS
-wtforms-sqlalchemy
