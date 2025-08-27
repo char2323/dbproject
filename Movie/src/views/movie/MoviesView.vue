@@ -18,6 +18,7 @@ const errorMessage = ref('')
 onMounted(async () => {
   try {
     const response = await apiClient.get('/movies/')
+    console.log('从后端获取到的原始数据:', response.data)
     movies.value = response.data
   } catch (error) {
     errorMessage.value = '无法加载电影列表，请稍后再试。'

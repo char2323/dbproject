@@ -8,7 +8,6 @@ werkzeug>=2.0
 python-dotenv>=1.0.0
 Flask-CORS>=4.0.0
 wtforms-sqlalchemy
-cryptography
 
 # API Framework
 flask-restx
@@ -19,12 +18,17 @@ mysqlclient # Docker环境中用这个
 PyMySQL     # 本地Conda环境用这个
 alembic
 Flask-Migrate
+cryptography
 
 # WSGI Server and Concurrency
-gunicorn>=2.0
+gunicorn>=20.0
 gevent
+
+# Web Scraping Libraries (爬虫库)
+requests
+beautifulsoup4
+lxml
 
 # Utilities
 redis>=4.0
 Pillow>=9.0
-requests
