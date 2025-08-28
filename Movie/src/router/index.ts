@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainView from '@/views/MainView.vue'
 import SigninView from '@/views/auth/SigninView.vue'
+import SignupView from '@/views/auth/SignupView.vue'
 import MoviesView from '@/views/movie/MoviesView.vue'
 import ProfileView from '@/views/profile/ProfileView.vue'
 import MovieDetailView from '@/views/movie/MovieDetailView.vue'
@@ -28,6 +29,11 @@ const router = createRouter({
       path: '/signin',
       name: 'signin',
       component: SigninView
+    },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: SignupView
     },
     {
       path: '/movie/:id',
@@ -70,13 +76,18 @@ const router = createRouter({
 // 全局前置路由守卫
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  const publicPages = ['signin']
+  
+  // 定义不需要登录就能访问的页面
+  const publicPages = ['signin', 'signup']
+
+  // 检查目标路由的 name 是否在 publicPages 列表中
   const authRequired = !publicPages.includes(to.name as string)
 
+  // 如果页面需要登录，但用户未登录
   if (authRequired && !authStore.isAuthenticated) {
     return next({ name: 'signin' })
   }
-
+  
   next()
 })
 

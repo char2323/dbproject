@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth' // 导入我们创建的 auth store
+import { useRouter, RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const username = ref('')
 const password = ref('')
@@ -9,7 +9,7 @@ const errorMessage = ref('')
 const isLoading = ref(false)
 
 const router = useRouter()
-const authStore = useAuthStore() // 获取 auth store 的实例
+const authStore = useAuthStore()
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -20,17 +20,14 @@ const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
-  // 调用 auth store 中的 login action
   const result = await authStore.login(username.value, password.value)
 
   isLoading.value = false
 
   if (result.success) {
-    // 登录成功，跳转到首页
     console.log('登录成功!', authStore.user)
     router.push('/')
   } else {
-    // 登录失败，显示后端返回的错误信息
     errorMessage.value = result.message || '登录失败'
   }
 }
@@ -85,6 +82,14 @@ const handleLogin = async () => {
           </button>
         </div>
       </form>
+      
+      <div class="text-sm text-center text-gray-500">
+        还没有账户？
+        <router-link to="/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
+          立即注册
+        </router-link>
+      </div>
+
     </div>
   </div>
 </template>
