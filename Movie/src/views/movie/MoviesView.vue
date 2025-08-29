@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import apiClient from '@/services/api.ts'
 
 interface Movie {
@@ -14,6 +14,10 @@ const movies = ref<Movie[]>([])
 const searchQuery = ref('') // 搜索关键字
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// --- 分页状态 ---
+const currentPage = ref(1) // 当前页码
+const itemsPerPage = ref(8) // 每页显示8部电影
 
 onMounted(async () => {
   try {
@@ -33,6 +37,72 @@ const filteredMovies = computed(() => {
     movie.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
+
+// --- 计算总页数 ---
+const totalPages = computed(() => {
+  return Math.ceil(filteredMovies.value.length / itemsPerPage.value)
+})
+
+// --- 计算当前页应显示的电影 ---
+const paginatedMovies = computed(() => {
+  if (filteredMovies.value.length === 0) {
+    return []
+  }
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredMovies.value.slice(start, end)
+})
+
+// --- 监听搜索变化，重置到第一页 ---
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+// --- 分页导航方法 ---
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+// --- 核心：计算要显示的页码数组 ---
+const pageNumbers = computed(() => {
+  const maxVisibleButtons = 7; // 最多显示7个页码按钮
+  if (totalPages.value <= maxVisibleButtons) {
+    // 如果总页数不多，全部显示
+    return Array.from({ length: totalPages.value }, (_, i) => i + 1);
+  }
+
+  const pages = new Set<number | string>();
+  pages.add(1); // 始终显示第一页
+
+  // 计算中间部分的页码
+  let start = Math.max(2, currentPage.value - 2);
+  let end = Math.min(totalPages.value - 1, currentPage.value + 2);
+
+  if (currentPage.value <= 4) {
+      end = 5;
+  }
+  if (currentPage.value >= totalPages.value - 3) {
+      start = totalPages.value - 4;
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.add(i);
+  }
+
+  // 添加省略号
+  if (start > 2) {
+    pages.add('...');
+  }
+  if (end < totalPages.value - 1) {
+    pages.add('....'); // 使用不同的省略号以避免 V-for key 冲突
+  }
+
+  pages.add(totalPages.value); // 始终显示最后一页
+
+  return Array.from(pages);
+});
 </script>
 
 <template>
@@ -59,7 +129,7 @@ const filteredMovies = computed(() => {
 
     <div v-if="!isLoading && !errorMessage" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <router-link
-        v-for="movie in filteredMovies"
+        v-for="movie in paginatedMovies"
         :key="movie.id"
         :to="`/movie/${movie.id}`"
         class="perspective"
@@ -70,8 +140,6 @@ const filteredMovies = computed(() => {
             :alt="movie.name"
             class="movie-cover"
           />
-
-          <!-- 悬浮显示简介 -->
           <div class="overlay">
             <h3 class="movie-title">{{ movie.name }}</h3>
             <p class="movie-desc">{{ movie.description }}</p>
@@ -83,6 +151,40 @@ const filteredMovies = computed(() => {
 
     <div v-if="!isLoading && !errorMessage && filteredMovies.length === 0" class="text-center text-white/70 mt-20">
       未找到匹配的电影
+    </div>
+
+    <!-- 新版分页控制器 -->
+    <div v-if="!isLoading && totalPages > 1" class="flex justify-center items-center space-x-1 md:space-x-2 mt-10">
+      <!-- 上一页按钮 -->
+      <button
+        @click="goToPage(currentPage - 1)"
+        :disabled="currentPage === 1"
+        class="page-item"
+      >
+        &lt;
+      </button>
+
+      <!-- 页码按钮 -->
+      <template v-for="page in pageNumbers" :key="page">
+        <button
+          v-if="typeof page === 'number'"
+          @click="goToPage(page)"
+          :class="['page-item', { 'active': page === currentPage }]"
+        >
+          {{ page }}
+        </button>
+        <!-- 省略号 -->
+        <span v-else class="page-item-ellipsis">...</span>
+      </template>
+
+      <!-- 下一页按钮 -->
+      <button
+        @click="goToPage(currentPage + 1)"
+        :disabled="currentPage === totalPages"
+        class="page-item"
+      >
+        &gt;
+      </button>
     </div>
   </div>
 </template>
@@ -163,5 +265,48 @@ const filteredMovies = computed(() => {
 
 .buy-btn:hover {
   transform: scale(1.1);
+}
+
+/* --- 新版分页样式 --- */
+.page-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.page-item:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.page-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-item.active {
+  background: linear-gradient(90deg, #ff4d6d, #ff6fc7);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.page-item-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: rgba(255, 255, 255, 0.7);
 }
 </style>

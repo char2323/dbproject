@@ -1,29 +1,31 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+// 👇 1. Import useRouter to handle navigation
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import apiClient from '@/services/api.ts'
 import { useAuthStore } from '@/stores/auth'
 
-// --- 类型定义 ---
+// --- Type Definitions ---
 interface Movie { id: number; name: string; cover: string; description: string; release_date: string; duration_mins: number; }
 interface Comment { id: number; content: string; rating: number; create_time: string; user: { username: string }; }
 
 const route = useRoute()
+const router = useRouter() // <-- 2. Get the router instance
 const authStore = useAuthStore()
 
+// --- Reactive Variables ---
 const movie = ref<Movie | null>(null)
 const comments = ref<Comment[]>([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 const favoriteStatus = ref(0)
-
 const newCommentContent = ref('')
 const newCommentRating = ref(5)
 const isSubmittingComment = ref(false)
-
 const movieId = Number(route.params.id)
 
+// --- Data Fetching ---
 onMounted(async () => {
   try {
     const [movieResponse, statusResponse, commentsResponse] = await Promise.all([
@@ -41,6 +43,7 @@ onMounted(async () => {
   }
 })
 
+// --- Methods ---
 const handleFavorite = async (status: number) => {
   const isCanceling = favoriteStatus.value === status;
   try {
@@ -76,15 +79,25 @@ const handleSubmitComment = async () => {
     isSubmittingComment.value = false
   }
 }
+
+// 3. Create a function to go back
+const goBack = () => {
+  router.push('/') // Navigate to the home page
+}
 </script>
 
 <template>
-  <div class="p-4 md:p-8 bg-gradient-to-br from-purple-700 via-pink-600 to-indigo-700 min-h-screen text-white">
+  <div class="p-4 md:p-8 bg-gradient-to-br from-purple-700 via-pink-600 to-indigo-700 min-h-screen text-white relative">
+    <!-- 👇 4. Add the Back Button here 👇 -->
+    <button @click="goBack" class="absolute top-4 left-4 md:top-8 md:left-8 bg-black/30 text-white font-semibold py-2 px-4 rounded-full hover:bg-white/30 transition-colors z-10">
+      &lt; 返回
+    </button>
+
     <div v-if="isLoading" class="text-center text-white/70 text-lg mt-20">正在加载详情...</div>
     <div v-if="errorMessage" class="p-4 text-red-200 bg-red-800/30 rounded-md text-center mb-6">{{ errorMessage }}</div>
 
     <div v-if="movie" class="max-w-5xl mx-auto space-y-12">
-      <!-- 电影信息卡 -->
+      <!-- Movie Info Card -->
       <div class="md:flex md:space-x-8 bg-black/30 p-6 rounded-xl shadow-2xl backdrop-blur-sm">
         <img
           :src="movie.cover || 'https://via.placeholder.com/400x600'"
@@ -123,11 +136,11 @@ const handleSubmitComment = async () => {
         </div>
       </div>
 
-      <!-- 评论区 -->
+      <!-- Comments Section -->
       <div>
         <h2 class="text-3xl font-bold mb-6 border-b border-white/30 pb-2">观众评论</h2>
 
-        <!-- 发表评论 -->
+        <!-- Post Comment -->
         <div v-if="authStore.isAuthenticated" class="bg-black/30 p-4 rounded-xl backdrop-blur-sm mb-6 shadow-lg">
           <h3 class="font-semibold mb-2">发表你的看法</h3>
           <textarea
@@ -157,7 +170,7 @@ const handleSubmitComment = async () => {
           </div>
         </div>
 
-        <!-- 评论列表 -->
+        <!-- Comments List -->
         <div v-if="comments.length > 0" class="space-y-4">
           <div v-for="comment in comments" :key="comment.id" class="bg-black/30 p-4 rounded-xl backdrop-blur-sm shadow-md">
             <div class="flex justify-between items-center">
