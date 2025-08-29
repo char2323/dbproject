@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -9,6 +10,7 @@ const phone = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
 const isLoading = ref(false)
+const showPassword = ref(false)
 
 const router = useRouter()
 
@@ -22,7 +24,6 @@ const handleSignup = async () => {
   successMessage.value = ''
 
   try {
-    // 调用我们早已创建好的 POST /api/users/ 接口
     await apiClient.post('/users/', {
       username: username.value,
       password: password.value,
@@ -31,7 +32,6 @@ const handleSignup = async () => {
 
     successMessage.value = '注册成功！正在跳转到登录页面...'
 
-    // 注册成功后，等待2秒，然后自动跳转到登录页
     setTimeout(() => {
       router.push('/signin')
     }, 2000)
@@ -45,43 +45,131 @@ const handleSignup = async () => {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-      <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-800">创建新账户</h1>
-        <p class="mt-2 text-gray-500">加入猿眼电影</p>
-      </div>
+  <div class="login-bg">
+    <main class="card">
+      <h1 class="brand">创建新账户</h1>
+      <p class="subtitle">加入猿眼电影</p>
 
-      <div v-if="successMessage" class="p-3 text-sm text-green-700 bg-green-100 rounded-md">
-        {{ successMessage }}
-      </div>
+      <div v-if="successMessage" class="success-box">{{ successMessage }}</div>
+      <div v-if="errorMessage" class="error-box">{{ errorMessage }}</div>
 
-      <div v-if="errorMessage" class="p-3 text-sm text-red-700 bg-red-100 rounded-md">
-        {{ errorMessage }}
-      </div>
-
-      <form @submit.prevent="handleSignup" class="space-y-6">
-        <div>
-          <label for="username" class="text-sm font-medium text-gray-700">用户名</label>
-          <input v-model="username" id="username" type="text" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="请输入用户名">
+      <form @submit.prevent="handleSignup" class="form">
+        <label class="label">用户名</label>
+        <div class="field">
+          <input v-model="username" type="text" placeholder="请输入用户名" class="input" required />
         </div>
 
-        <div>
-          <label for="password" class="text-sm font-medium text-gray-700">密码</label>
-          <input v-model="password" id="password" type="password" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="请输入密码 (至少6位)">
-        </div>
-
-        <div>
-          <label for="phone" class="text-sm font-medium text-gray-700">手机号</label>
-          <input v-model="phone" id="phone" type="tel" required class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="请输入手机号">
-        </div>
-
-        <div>
-          <button type="submit" :disabled="isLoading" class="w-full px-4 py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400">
-            {{ isLoading ? '注册中...' : '注 册' }}
+        <label class="label">密码</label>
+        <div class="field">
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="请输入密码" class="input" required />
+          <button type="button" class="toggle-pass" @click="showPassword = !showPassword">
+            {{ showPassword ? '🙈' : '👁️' }}
           </button>
         </div>
+
+        <label class="label">手机号</label>
+        <div class="field">
+          <input v-model="phone" type="tel" placeholder="请输入手机号" class="input" required />
+        </div>
+
+        <button type="submit" class="btn" :disabled="isLoading">
+          {{ isLoading ? '注册中...' : '注 册' }}
+        </button>
       </form>
-    </div>
+    </main>
   </div>
 </template>
+
+<style scoped>
+/* 与登录页一致的玻璃态样式 */
+.login-bg {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: url('/src/assets/bg.png') no-repeat center center/cover;
+}
+
+.card {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  width: 360px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.brand {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: #eee;
+  margin-bottom: 20px;
+}
+
+.field {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.input::placeholder {
+  color: #ddd;
+}
+
+.toggle-pass {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.error-box {
+  background: rgba(255,0,0,0.2);
+  color: #ff4d4f;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.success-box {
+  background: rgba(0,255,0,0.2);
+  color: #00ff88;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: #4cafef;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
+</style>

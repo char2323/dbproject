@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -20,7 +21,7 @@ onMounted(async () => {
   try {
     const response = await apiClient.get('/favorites/')
     favorites.value = response.data
-  } catch (error) {
+  } catch {
     errorMessage.value = '无法加载列表，请稍后再试。'
   } finally {
     isLoading.value = false
@@ -36,15 +37,16 @@ const haveWatchedList = computed(() => favorites.value.filter(fav => fav.status 
     <h1 class="text-2xl font-bold mb-6 text-gray-800">我的电影收藏</h1>
 
     <div v-if="isLoading" class="text-center text-gray-500">正在加载...</div>
-    <div v-if="errorMessage" class="p-4 text-red-700 bg-red-100 rounded-md">{{ errorMessage }}</div>
+    <div v-else-if="errorMessage" class="p-4 text-red-700 bg-red-100 rounded-md">{{ errorMessage }}</div>
 
-    <div v-if="!isLoading">
+    <div v-else>
+      <!-- 想看 -->
       <section>
         <h2 class="text-xl font-semibold mb-4 text-gray-700">想看的电影</h2>
         <div v-if="wantToWatchList.length > 0" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <router-link v-for="fav in wantToWatchList" :key="fav.movie.id" :to="`/movie/${fav.movie.id}`">
-            <div class="bg-white rounded-lg shadow-md overflow-hidden h-full cursor-pointer hover:shadow-xl transition-shadow">
-              <img :src="fav.movie.cover" :alt="fav.movie.name" class="w-full h-auto object-cover">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden h-full cursor-pointer hover:shadow-xl transition">
+              <img :src="fav.movie.cover" :alt="fav.movie.name" class="w-full aspect-[2/3] object-cover" />
               <div class="p-2">
                 <h3 class="font-semibold text-sm truncate">{{ fav.movie.name }}</h3>
               </div>
@@ -54,12 +56,13 @@ const haveWatchedList = computed(() => favorites.value.filter(fav => fav.status 
         <p v-else class="text-gray-500">暂无想看的电影。</p>
       </section>
 
+      <!-- 看过 -->
       <section class="mt-8">
         <h2 class="text-xl font-semibold mb-4 text-gray-700">看过的电影</h2>
         <div v-if="haveWatchedList.length > 0" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <router-link v-for="fav in haveWatchedList" :key="fav.movie.id" :to="`/movie/${fav.movie.id}`">
-            <div class="bg-white rounded-lg shadow-md overflow-hidden h-full cursor-pointer hover:shadow-xl transition-shadow">
-              <img :src="fav.movie.cover" :alt="fav.movie.name" class="w-full h-auto object-cover">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden h-full cursor-pointer hover:shadow-xl transition">
+              <img :src="fav.movie.cover" :alt="fav.movie.name" class="w-full aspect-[2/3] object-cover" />
               <div class="p-2">
                 <h3 class="font-semibold text-sm truncate">{{ fav.movie.name }}</h3>
               </div>

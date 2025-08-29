@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
@@ -11,21 +12,18 @@ interface Comment { id: number; content: string; rating: number; create_time: st
 const route = useRoute()
 const authStore = useAuthStore()
 
-// --- 响应式变量 ---
 const movie = ref<Movie | null>(null)
 const comments = ref<Comment[]>([])
 const isLoading = ref(true)
 const errorMessage = ref('')
-const favoriteStatus = ref(0) // 0: 未操作, 1: 想看, 2: 已看
+const favoriteStatus = ref(0)
 
-// 评论表单
 const newCommentContent = ref('')
 const newCommentRating = ref(5)
 const isSubmittingComment = ref(false)
 
 const movieId = Number(route.params.id)
 
-// --- 数据获取 ---
 onMounted(async () => {
   try {
     const [movieResponse, statusResponse, commentsResponse] = await Promise.all([
@@ -43,7 +41,6 @@ onMounted(async () => {
   }
 })
 
-// --- 方法 ---
 const handleFavorite = async (status: number) => {
   const isCanceling = favoriteStatus.value === status;
   try {
@@ -51,10 +48,7 @@ const handleFavorite = async (status: number) => {
       await apiClient.delete(`/favorites/${movieId}`)
       favoriteStatus.value = 0
     } else {
-      await apiClient.post('/favorites/', {
-        movie_id: movieId,
-        status: status
-      })
+      await apiClient.post('/favorites/', { movie_id: movieId, status: status })
       favoriteStatus.value = status
     }
   } catch (error) {
@@ -85,64 +79,67 @@ const handleSubmitComment = async () => {
 </script>
 
 <template>
-  <div class="p-4 md:p-8">
-    <div v-if="isLoading" class="text-center text-gray-500">正在加载详情...</div>
-    <div v-if="errorMessage" class="p-4 text-red-700 bg-red-100 rounded-md">{{ errorMessage }}</div>
+  <div class="p-4 md:p-8 bg-gradient-to-br from-purple-700 via-pink-600 to-indigo-700 min-h-screen text-white">
+    <div v-if="isLoading" class="text-center text-white/70 text-lg mt-20">正在加载详情...</div>
+    <div v-if="errorMessage" class="p-4 text-red-200 bg-red-800/30 rounded-md text-center mb-6">{{ errorMessage }}</div>
 
-    <div v-if="movie">
-      <div class="max-w-4xl mx-auto">
-        <div class="md:flex">
-          <div class="md:flex-shrink-0">
-            <img :src="movie.cover || 'https://via.placeholder.com/400x600'" :alt="movie.name" class="rounded-lg w-full md:w-64">
-          </div>
-          <div class="mt-4 md:mt-0 md:ml-6 flex flex-col w-full">
-            <h1 class="text-3xl font-bold text-gray-900">{{ movie.name }}</h1>
-            <p class="text-gray-600 mt-2">时长: {{ movie.duration_mins }} 分钟</p>
-            <p class="text-gray-600">上映日期: {{ movie.release_date }}</p>
-            <p class="mt-4 text-gray-700 flex-grow">{{ movie.description }}</p>
+    <div v-if="movie" class="max-w-5xl mx-auto space-y-12">
+      <!-- 电影信息卡 -->
+      <div class="md:flex md:space-x-8 bg-black/30 p-6 rounded-xl shadow-2xl backdrop-blur-sm">
+        <img
+          :src="movie.cover || 'https://via.placeholder.com/400x600'"
+          :alt="movie.name"
+          class="rounded-xl w-full md:w-64 object-cover shadow-lg"
+        />
+        <div class="mt-4 md:mt-0 flex flex-col flex-1">
+          <h1 class="text-4xl font-extrabold">{{ movie.name }}</h1>
+          <p class="text-gray-200 mt-2">时长: {{ movie.duration_mins }} 分钟</p>
+          <p class="text-gray-200">上映日期: {{ movie.release_date }}</p>
+          <p class="mt-4 text-gray-100 flex-grow">{{ movie.description }}</p>
 
-            <div class="mt-6 flex space-x-4">
-              <button 
-                @click="handleFavorite(1)"
-                class="flex-1 border py-2 px-4 rounded-lg transition-colors"
-                :class="favoriteStatus === 1 ? 'bg-yellow-400 border-yellow-400 text-white' : 'bg-white border-gray-300 hover:bg-gray-100'"
-              >
-                {{ favoriteStatus === 1 ? '已想看' : '想看' }}
-              </button>
-              <button 
-                @click="handleFavorite(2)"
-                class="flex-1 border py-2 px-4 rounded-lg transition-colors"
-                :class="favoriteStatus === 2 ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300 hover:bg-gray-100'"
-              >
-                {{ favoriteStatus === 2 ? '已看过' : '看过' }}
-              </button>
-            </div>
-            
-            <router-link
-              :to="`/movie/${movie.id}/select-screen`"
-              class="mt-4 block text-center w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700"
+          <div class="mt-6 flex flex-wrap gap-4">
+            <button
+              @click="handleFavorite(1)"
+              class="flex-1 py-2 px-4 rounded-lg font-semibold transition transform hover:scale-105"
+              :class="favoriteStatus === 1 ? 'bg-yellow-400 text-black' : 'bg-white/30 hover:bg-yellow-500/70'"
             >
-              立即购票
-            </router-link>
+              {{ favoriteStatus === 1 ? '已想看' : '想看' }}
+            </button>
+            <button
+              @click="handleFavorite(2)"
+              class="flex-1 py-2 px-4 rounded-lg font-semibold transition transform hover:scale-105"
+              :class="favoriteStatus === 2 ? 'bg-green-500 text-white' : 'bg-white/30 hover:bg-green-500/70'"
+            >
+              {{ favoriteStatus === 2 ? '已看过' : '看过' }}
+            </button>
           </div>
+
+          <router-link
+            :to="`/movie/${movie.id}/select-screen`"
+            class="mt-4 block text-center bg-red-600 font-bold py-3 px-4 rounded-full hover:bg-red-700 transition transform hover:scale-105"
+          >
+            立即购票
+          </router-link>
         </div>
       </div>
 
-      <div class="max-w-4xl mx-auto mt-12">
-        <h2 class="text-2xl font-bold mb-4 border-b pb-2">观众评论</h2>
+      <!-- 评论区 -->
+      <div>
+        <h2 class="text-3xl font-bold mb-6 border-b border-white/30 pb-2">观众评论</h2>
 
-        <div v-if="authStore.isAuthenticated" class="bg-white p-4 rounded-lg shadow-md mb-6">
+        <!-- 发表评论 -->
+        <div v-if="authStore.isAuthenticated" class="bg-black/30 p-4 rounded-xl backdrop-blur-sm mb-6 shadow-lg">
           <h3 class="font-semibold mb-2">发表你的看法</h3>
-          <textarea 
+          <textarea
             v-model="newCommentContent"
             rows="3"
-            class="w-full p-2 border rounded-md"
+            class="w-full p-2 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-purple-400"
             placeholder="说点什么吧..."
           ></textarea>
           <div class="flex justify-between items-center mt-2">
             <div>
               <label class="mr-2">评分:</label>
-              <select v-model.number="newCommentRating" class="p-1 border rounded-md">
+              <select v-model.number="newCommentRating" class="p-1 rounded-lg bg-white/10 border border-white/30 text-white">
                 <option>5</option>
                 <option>4</option>
                 <option>3</option>
@@ -150,28 +147,29 @@ const handleSubmitComment = async () => {
                 <option>1</option>
               </select>
             </div>
-            <button 
-              @click="handleSubmitComment" 
+            <button
+              @click="handleSubmitComment"
               :disabled="isSubmittingComment"
-              class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+              class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-6 rounded-full disabled:bg-gray-400 transition transform hover:scale-105"
             >
               {{ isSubmittingComment ? '提交中...' : '发表' }}
             </button>
           </div>
         </div>
 
+        <!-- 评论列表 -->
         <div v-if="comments.length > 0" class="space-y-4">
-          <div v-for="comment in comments" :key="comment.id" class="bg-white p-4 rounded-lg shadow-md">
+          <div v-for="comment in comments" :key="comment.id" class="bg-black/30 p-4 rounded-xl backdrop-blur-sm shadow-md">
             <div class="flex justify-between items-center">
               <span class="font-semibold">{{ comment.user.username }}</span>
-              <span class="text-yellow-500 font-bold">评分: {{ comment.rating }}/5</span>
+              <span class="text-yellow-400 font-bold">评分: {{ comment.rating }}/5</span>
             </div>
-            <p class="text-gray-700 mt-2">{{ comment.content }}</p>
+            <p class="text-gray-200 mt-2">{{ comment.content }}</p>
             <p class="text-xs text-gray-400 text-right mt-2">{{ new Date(comment.create_time).toLocaleString() }}</p>
           </div>
         </div>
-        <div v-else class="text-center text-gray-500 py-8">
-          <p>暂无评论，快来抢沙发吧！</p>
+        <div v-else class="text-center text-white/70 py-8">
+          暂无评论，快来抢沙发吧！
         </div>
       </div>
     </div>
