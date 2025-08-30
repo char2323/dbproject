@@ -3,43 +3,59 @@ from flask_login import login_user, logout_user, login_required, current_user
 from ..models import User
 from .. import db
 
-ns = Namespace('Session', description='会话管理（登录/退出）')
+# 创建一个命名空间，用于会话管理相关接口
+ns = Namespace("Session", description="会话管理（登录/退出）")
 
-login_model = ns.model('LoginModel', {
-    'username': fields.String(required=True, description='用户名'),
-    'password': fields.String(required=True, description='密码')
-})
+# 定义登录请求数据模型
+login_model = ns.model(
+    "LoginModel",
+    {
+        "username": fields.String(required=True, description="用户名"),
+        "password": fields.String(required=True, description="密码"),
+    },
+)
 
-user_info_model = ns.model('UserInfo', {
-    'id': fields.Integer(),
-    'username': fields.String()
-})
+# 定义返回的用户信息数据模型
+user_info_model = ns.model(
+    "UserInfo",
+    {
+        "id": fields.Integer(),  # 用户ID
+        "username": fields.String(),  # 用户名
+    },
+)
 
-@ns.route('/login')
+
+@ns.route("/login")
 class Login(Resource):
-    @ns.expect(login_model, validate=True)
-    @ns.marshal_with(user_info_model)
+    @ns.expect(
+        login_model, validate=True
+    )  # 期望接收 login_model 格式的数据，并进行验证
+    @ns.marshal_with(user_info_model)  # 返回的数据将按照 user_info_model 格式序列化
     def post(self):
         """用户登录"""
-        data = ns.payload
-        user = User.query.filter_by(username=data['username']).first()
-        if user and user.verify_password(data['password']):
-            login_user(user, remember=True) # 使用 flask_login 登录用户
-            return user
-        ns.abort(401, '用户名或密码错误')
+        data = ns.payload  # 获取请求中的数据
+        user = User.query.filter_by(
+            username=data["username"]
+        ).first()  # 根据用户名查询用户
+        if user and user.verify_password(data["password"]):  # 验证密码是否正确
+            login_user(user, remember=True)  # 使用 flask_login 登录用户，记住登录状态
+            return user  # 返回用户信息
+        ns.abort(401, "用户名或密码错误")  # 登录失败，返回 401 错误
 
-@ns.route('/logout')
+
+@ns.route("/logout")
 class Logout(Resource):
-    @login_required
+    @login_required  # 该接口需要用户登录才能访问
     def post(self):
         """用户退出"""
-        logout_user()
-        return {'message': '退出成功'}, 200
+        logout_user()  # 使用 flask_login 注销当前用户
+        return {"message": "退出成功"}, 200  # 返回成功消息
 
-@ns.route('/status')
+
+@ns.route("/status")
 class Status(Resource):
-    @login_required
-    @ns.marshal_with(user_info_model)
+    @login_required  # 该接口需要用户登录才能访问
+    @ns.marshal_with(user_info_model)  # 返回的数据将按照 user_info_model 格式序列化
     def get(self):
         """获取当前登录状态"""
-        return current_user
+        return current_user  # 返回当前登录用户的信息
